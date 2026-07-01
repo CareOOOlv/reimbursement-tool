@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>费用报销单生成工具</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Tesseract.js (OCR 识别) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <div class="logo-mark">
+                <img src="assets/images/logo.png" alt="熊掌柜 AI" class="header-logo">
+                <span class="logo-yen" aria-hidden="true">¥</span>
+                <span class="logo-badge" aria-hidden="true">报销</span>
+            </div>
+            <div class="header-text">
+                <h1>费用报销单生成工具</h1>
+                <p class="subtitle">录入开支 · 截图识别 · 预览打印 · 导出 Excel</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- 1. 基本信息 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">👤</span>
+                <h2>基本信息</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reimburseName">报销人姓名 *</label>
+                        <input type="text" id="reimburseName" placeholder="请输入您的姓名" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="reimburseDept">部门</label>
+                        <input type="text" id="reimburseDept" placeholder="如：技术部" maxlength="30">
+                    </div>
+                    <div class="form-group">
+                        <label for="reimburseDate">报销日期</label>
+                        <input type="date" id="reimburseDate">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 开支明细 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">💳</span>
+                <h2>开支明细</h2>
+            </div>
+            <div class="card-body">
+                <div class="expense-table-wrapper">
+                    <table class="expense-table">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;"><input type="checkbox" id="selectAllRows" title="全选/取消全选" onchange="App.toggleSelectAll(this.checked)"></th>
+                                <th style="width:48px;">序号</th>
+                                <th style="width:140px;">报销类目</th>
+                                <th>开支说明</th>
+                                <th style="width:140px;">金额（元）</th>
+                                <th style="width:48px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseTableBody">
+                            <!-- 动态渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-outline" id="btnAddRow">＋ 添加一行</button>
+                    <button class="btn btn-outline btn-merge" id="btnMergeRows" disabled>↺ 合并选中行</button>
+                    <button class="btn btn-danger" id="btnClearAll">清空全部</button>
+                </div>
+
+                <!-- 合计 -->
+                <div id="summarySection" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- 3. 截图上传 & OCR 识别 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">📸</span>
+                <h2>截图识别（OCR）</h2>
+            </div>
+            <div class="card-body">
+                <p style="font-size:0.875rem; color:#64748b; margin-bottom:12px;">
+                    上传发票、收据或消费凭证的截图，系统将自动识别金额并建议报销类目。支持 JPG / PNG / WebP 格式。<br>
+                    <span style="color:#ef4444;">识别不能保证完全准确，请报销人根据报销明细再做核对。</span>
+                </p>
+
+                <!-- 上传区域 -->
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <p><strong>点击上传</strong>或拖拽截图到此处</p>
+                    <p class="upload-hint">支持 JPG / PNG / WebP，最大 20MB</p>
+                    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/bmp,image/gif">
+                </div>
+
+                <!-- 图片预览 -->
+                <img id="imagePreview" class="image-preview" alt="截图预览">
+
+                <!-- OCR 进度 -->
+                <div class="ocr-progress" id="ocrProgress">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="progressBarFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">准备识别...</p>
+                </div>
+
+                <!-- OCR 识别结果 -->
+                <div class="ocr-results" id="ocrResults">
+                    <div class="ocr-results-header">
+                        <span class="title">✅ 识别到以下开支记录</span>
+                        <label style="font-size:0.8125rem; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                            <input type="checkbox" id="ocrSelectAll" checked> 全选
+                        </label>
+                    </div>
+                    <table class="ocr-results-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">选择</th>
+                                <th style="width:130px;">类目（可修改）</th>
+                                <th>摘要</th>
+                                <th style="width:110px;">金额</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ocrResultsBody"></tbody>
+                    </table>
+                    <div class="ocr-footer">
+                        <button class="btn btn-primary" id="btnApplyOcr">应用到表格</button>
+                        <button class="btn btn-outline" onclick="document.getElementById('ocrResults').classList.remove('active')">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 操作按钮 -->
+        <div style="display:flex; gap:12px; justify-content:center; padding:8px 0 16px;">
+            <button class="btn btn-primary" id="btnPreview" style="padding:12px 32px; font-size:1rem;">
+                👁️ 生成预览
+            </button>
+        </div>
+
+    </main>
+
+    <!-- 预览弹窗 -->
+    <div class="preview-overlay" id="previewOverlay">
+        <div class="preview-dialog">
+            <div class="preview-header">
+                <h3>📄 费用报销单预览</h3>
+                <button class="btn-close" id="btnClosePreview">&times;</button>
+            </div>
+            <div class="preview-body">
+                <!-- 报销单格式 -->
+                <div class="preview-form">
+                    <div class="form-title">费 用 报 销 单</div>
+
+                    <!-- 基本信息行 -->
+                    <div class="form-info">
+                        <div>
+                            <span class="info-label">报销人：</span>
+                            <span class="info-value" id="previewReimburser">-</span>
+                        </div>
+                        <div>
+                            <span class="info-label">部门：</span>
+                            <span class="info-value" id="previewDept">-</span>
+                        </div>
+                        <div>
+                            <span class="info-label">报销日期：</span>
+                            <span class="info-value" id="previewDate">-</span>
+                        </div>
+                    </div>
+
+                    <!-- 报销明细表 -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:60px;">序号</th>
+                                <th style="width:100px;">报销类目</th>
+                                <th>摘要</th>
+                                <th style="width:120px;">金额（元）</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewItems">
+                            <!-- 动态渲染 -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="form-total-row">
+                                <td colspan="3">合 计（小写）</td>
+                                <td style="text-align:right; font-family:monospace;" id="previewTotal">¥ 0.00</td>
+                            </tr>
+                            <tr class="form-total-row">
+                                <td colspan="3">合 计（大写）</td>
+                                <td style="text-align:right; font-size:0.8rem;" id="previewTotalCN">人民币零元整</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- 签字区 -->
+                    <div class="form-sign">
+                        <div>报销人签字：<span id="previewSigner" style="font-weight:600;"></span></div>
+                        <div>
+                            <span style="margin-right:24px;">审核人：<span id="previewReviewer" style="font-weight:600;">胡博凯</span></span>
+                            <span>审批人：<span id="previewApprover" style="font-weight:600;">陈崇磐</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-actions">
+                    <button class="btn btn-primary" id="btnDownloadPdf">📥 下载PDF</button>
+                    <button class="btn btn-outline" id="btnPrint">🖨️ 打印</button>
+                    <button class="btn btn-outline" id="btnClosePreviewBottom">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        费用报销单生成工具 · 数据仅在浏览器本地处理，不会上传到服务器
+    </footer>
+
+    <!-- 加载 JS 模块 -->
+    <script src="js/currency.js"></script>
+    <script src="js/ocr.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
