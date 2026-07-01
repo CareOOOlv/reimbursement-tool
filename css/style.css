@@ -1181,3 +1181,40 @@ body {
 .ocr-cat-select:focus {
     border-color: var(--color-border-focus);
 }
+
+.ocr-desc-input {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-family: inherit;
+    background: #fff;
+    outline: none;
+}
+
+.ocr-desc-input:focus {
+    border-color: var(--color-border-focus);
+}
+
+.ocr-amount-input {
+    width: 80px;
+    padding: 4px 6px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-family: monospace;
+    text-align: right;
+    background: #fff;
+    outline: none;
+}
+
+.ocr-amount-input:focus {
+    border-color: var(--color-border-focus);
+}
+
+.ocr-amount-prefix {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-right: 2px;
+}

@@ -624,14 +624,21 @@ const App = (() => {
                         ).join('')}
                     </select>
                 </td>
-                <td>${escapeHtml(entry.description)}</td>
-                <td class="suggested-amount">¥ ${entry.amount.toFixed(2)}</td>
+                <td>
+                    <input type="text" class="ocr-desc-input" value="${escapeHtml(entry.description)}"
+                        oninput="App.onOcrDescChange(${index}, this.value)">
+                </td>
+                <td>
+                    <input type="text" class="ocr-amount-input"
+                        value="${entry.amount.toFixed(2)}"
+                        oninput="App.onOcrAmountInput(this); App.onOcrAmountChange(${index}, this.value)">
+                </td>
             </tr>
         `).join('');
 
         resultsDiv.classList.add('active');
 
-        // 行点击切换选中（但不在 select 上触发）
+        // 行点击切换选中（但不在 input/select 上触发）
         tbody.querySelectorAll('.ocr-result-row').forEach(row => {
             row.addEventListener('click', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -642,6 +649,28 @@ const App = (() => {
         });
 
         showToast(`识别到 ${entries.length} 条开支记录，确认后应用到实际开支`, 'success');
+    }
+
+    function onOcrDescChange(index, newDesc) {
+        if (state.ocrResults[index]) {
+            state.ocrResults[index].description = newDesc;
+        }
+    }
+
+    function onOcrAmountInput(input) {
+        let value = input.value.replace(/[^\d.]/g, '');
+        const dotIndex = value.indexOf('.');
+        if (dotIndex !== -1) {
+            value = value.substring(0, dotIndex + 1) + value.substring(dotIndex + 1).replace(/\./g, '');
+            if (value.length - dotIndex > 3) value = value.substring(0, dotIndex + 3);
+        }
+        input.value = value;
+    }
+
+    function onOcrAmountChange(index, value) {
+        if (state.ocrResults[index]) {
+            state.ocrResults[index].amount = parseFloat(value) || 0;
+        }
     }
 
     function onOcrCatChange(index, newCat) {
@@ -789,6 +818,9 @@ const App = (() => {
         toggleSelectAll,
         mergeSelectedRows,
         onOcrCatChange,
+        onOcrDescChange,
+        onOcrAmountChange,
+        onOcrAmountInput,
         removeExpense,
     };
 })();
