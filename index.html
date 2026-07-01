@@ -22,7 +22,7 @@
             </div>
             <div class="header-text">
                 <h1>费用报销单生成工具</h1>
-                <p class="subtitle">录入开支 · 截图识别 · 预览打印 · 导出 Excel</p>
+                <p class="subtitle">录入发票 · 截图识别 · 预览打印 · 下载 PDF</p>
             </div>
         </div>
     </header>
@@ -54,11 +54,12 @@
             </div>
         </div>
 
-        <!-- 2. 开支明细 -->
+        <!-- 2. 发票录入（报销依据） -->
         <div class="card">
             <div class="card-header">
-                <span class="icon">💳</span>
-                <h2>开支明细</h2>
+                <span class="icon">🧾</span>
+                <h2>发票录入（报销依据）</h2>
+                <span style="font-size:0.75rem;color:var(--color-text-muted);margin-left:auto;">录入你有的发票，将以此生成报销单</span>
             </div>
             <div class="card-body">
                 <div class="expense-table-wrapper">
@@ -68,7 +69,7 @@
                                 <th style="width:36px;"><input type="checkbox" id="selectAllRows" title="全选/取消全选" onchange="App.toggleSelectAll(this.checked)"></th>
                                 <th style="width:48px;">序号</th>
                                 <th style="width:140px;">报销类目</th>
-                                <th>开支说明</th>
+                                <th>发票说明</th>
                                 <th style="width:140px;">金额（元）</th>
                                 <th style="width:48px;">操作</th>
                             </tr>
@@ -90,12 +91,12 @@
             </div>
         </div>
 
-        <!-- 3. 已有发票 -->
+        <!-- 3. 实际开支（用于对比凑单） -->
         <div class="card">
             <div class="card-header">
-                <span class="icon">🧾</span>
-                <h2>已有发票</h2>
-                <span style="font-size:0.75rem;color:var(--color-text-muted);margin-left:auto;">输入已有发票金额，查看还差多少</span>
+                <span class="icon">💰</span>
+                <h2>实际开支（对比凑单）</h2>
+                <span style="font-size:0.75rem;color:var(--color-text-muted);margin-left:auto;">记录真实支出金额，对比发票总额看还差多少</span>
             </div>
             <div class="card-body">
                 <div class="invoice-input-row">
@@ -107,7 +108,7 @@
                 <div class="invoice-list" id="invoiceList">
                     <div class="empty-state" style="padding:24px;">
                         <div class="empty-icon">📭</div>
-                        <p>暂无已有发票，请在下方输入金额</p>
+                        <p>暂无实际开支记录，请在上方输入金额</p>
                     </div>
                 </div>
 
@@ -118,12 +119,12 @@
                     </div>
                     <div class="invoice-progress-stats">
                         <div class="invoice-stat">
-                            <span class="stat-label">报销目标</span>
+                            <span class="stat-label">实际开支</span>
                             <span class="stat-value" id="invoiceTarget">¥ 0.00</span>
                         </div>
-                        <div class="invoice-stat-divider">→</div>
+                        <div class="invoice-stat-divider">-</div>
                         <div class="invoice-stat">
-                            <span class="stat-label">已有发票</span>
+                            <span class="stat-label">发票总额</span>
                             <span class="stat-value" id="invoiceActual">¥ 0.00</span>
                         </div>
                         <div class="invoice-stat-divider">=</div>
@@ -148,8 +149,8 @@
             </div>
             <div class="card-body">
                 <p style="font-size:0.875rem; color:#64748b; margin-bottom:12px;">
-                    上传发票、收据或消费凭证的截图，系统将自动识别金额并建议报销类目。支持 JPG / PNG / WebP 格式。<br>
-                    <span style="color:#ef4444;">识别不能保证完全准确，请报销人根据报销明细再做核对。</span>
+                    上传发票、收据或消费凭证的截图，系统将自动识别金额并建议报销类目。识别结果应用到<strong>实际开支</strong>。支持 JPG / PNG / WebP 格式。<br>
+                    <span style="color:#ef4444;">识别不能保证完全准确，请报销人根据发票再做核对。</span>
                 </p>
 
                 <!-- 上传区域 -->
@@ -191,7 +192,7 @@
                         <tbody id="ocrResultsBody"></tbody>
                     </table>
                     <div class="ocr-footer">
-                        <button class="btn btn-primary" id="btnApplyOcr">应用到表格</button>
+                        <button class="btn btn-primary" id="btnApplyOcr">应用到实际开支</button>
                         <button class="btn btn-outline" onclick="document.getElementById('ocrResults').classList.remove('active')">取消</button>
                     </div>
                 </div>

@@ -9,11 +9,11 @@ const App = (() => {
         reimburser: '',
         department: '',
         date: '',
-        items: [], // [{id, category, description, amount}]
+        items: [], // 发票录入 [{id, category, description, amount}] — 报销依据
         ocrResults: [], // OCR 识别到的建议条目
-        invoices: [], // [{id, amount}] 已有发票
+        expenses: [], // [{id, amount}] 实际开支 — 用于对比凑单
         nextId: 1,
-        nextInvoiceId: 1,
+        nextExpenseId: 1,
     };
 
     // 类目选项
@@ -54,15 +54,15 @@ const App = (() => {
 
         // 清空表格
         document.getElementById('btnClearAll').addEventListener('click', () => {
-            if (state.items.length === 0 && state.invoices.length === 0) return;
-            if (confirm('确认清空所有开支明细和已有发票？')) {
+            if (state.items.length === 0 && state.expenses.length === 0) return;
+            if (confirm('确认清空所有发票录入和实际开支？')) {
                 state.items = [];
-                state.invoices = [];
+                state.expenses = [];
                 state.nextId = 1;
-                state.nextInvoiceId = 1;
+                state.nextExpenseId = 1;
                 addNewRow();
                 renderTable();
-                renderInvoices();
+                renderExpenses();
                 updateSummary();
             }
         });
@@ -95,8 +95,8 @@ const App = (() => {
         // 截图上传
         bindUploadEvents();
 
-        // 已有发票
-        bindInvoiceEvents();
+        // 实际开支
+        bindExpenseEvents();
     }
 
     function bindUploadEvents() {
@@ -253,18 +253,18 @@ const App = (() => {
         }
 
         // 同步更新凑单进度
-        updateInvoiceProgress();
+        updateProgress();
     }
 
-    // ---- 已有发票管理 ----
-    function bindInvoiceEvents() {
+    // ---- 实际开支管理（用于对比凑单） ----
+    function bindExpenseEvents() {
         const input = document.getElementById('invoiceAmountInput');
         const addBtn = document.getElementById('btnAddInvoice');
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                addInvoice();
+                addExpense();
             }
         });
 
@@ -279,10 +279,10 @@ const App = (() => {
             e.target.value = value;
         });
 
-        addBtn.addEventListener('click', addInvoice);
+        addBtn.addEventListener('click', addExpense);
     }
 
-    function addInvoice() {
+    function addExpense() {
         const input = document.getElementById('invoiceAmountInput');
         const value = parseFloat(input.value.trim());
         if (isNaN(value) || value <= 0) {
@@ -291,91 +291,97 @@ const App = (() => {
             return;
         }
 
-        state.invoices.push({
-            id: state.nextInvoiceId++,
+        state.expenses.push({
+            id: state.nextExpenseId++,
             amount: value,
         });
 
         input.value = '';
         input.focus();
-        renderInvoices();
+        renderExpenses();
     }
 
-    function removeInvoice(id) {
-        state.invoices = state.invoices.filter(i => i.id !== id);
-        renderInvoices();
+    function removeExpense(id) {
+        state.expenses = state.expenses.filter(i => i.id !== id);
+        renderExpenses();
     }
 
-    function renderInvoices() {
+    function renderExpenses() {
         const listDiv = document.getElementById('invoiceList');
         const progressDiv = document.getElementById('invoiceProgress');
 
-        if (state.invoices.length === 0) {
+        if (state.expenses.length === 0) {
             listDiv.innerHTML = `
                 <div class="empty-state" style="padding:24px;">
                     <div class="empty-icon">📭</div>
-                    <p>暂无已有发票，请在上方输入金额</p>
+                    <p>暂无实际开支记录，请在上方输入金额</p>
                 </div>
             `;
             progressDiv.style.display = 'none';
             return;
         }
 
-        // 渲染发票标签
-        listDiv.innerHTML = state.invoices.map(inv => `
+        // 渲染开支标签
+        listDiv.innerHTML = state.expenses.map(exp => `
             <span class="invoice-tag">
-                ¥${inv.amount.toFixed(2)}
-                <button class="tag-del" onclick="App.removeInvoice(${inv.id})" title="删除">×</button>
+                ¥${exp.amount.toFixed(2)}
+                <button class="tag-del" onclick="App.removeExpense(${exp.id})" title="删除">×</button>
             </span>
         `).join('');
 
-        updateInvoiceProgress();
+        updateProgress();
     }
 
-    function updateInvoiceProgress() {
+    function updateProgress() {
         const progressDiv = document.getElementById('invoiceProgress');
-        if (state.invoices.length === 0) {
+        if (state.expenses.length === 0) {
             progressDiv.style.display = 'none';
             return;
         }
 
         const validItems = state.items.filter(i => i.description && i.amount > 0);
-        const target = validItems.reduce((sum, i) => sum + i.amount, 0);
-        const actual = state.invoices.reduce((sum, i) => sum + i.amount, 0);
-        const gap = target - actual;
+        const invoiceTotal = validItems.reduce((sum, i) => sum + i.amount, 0); // 发票总额
+        const actualExpenses = state.expenses.reduce((sum, i) => sum + i.amount, 0); // 实际开支
+        const gap = actualExpenses - invoiceTotal; // 差额：正数表示还需凑发票
 
         progressDiv.style.display = 'block';
 
-        document.getElementById('invoiceTarget').textContent = `¥ ${target.toFixed(2)}`;
-        document.getElementById('invoiceActual').textContent = `¥ ${actual.toFixed(2)}`;
+        document.getElementById('invoiceTarget').textContent = `¥ ${actualExpenses.toFixed(2)}`;
+        document.getElementById('invoiceActual').textContent = `¥ ${invoiceTotal.toFixed(2)}`;
 
         const gapEl = document.getElementById('invoiceGap');
         const suggestion = document.getElementById('invoiceSuggestion');
         const progressFill = document.getElementById('invoiceProgressFill');
 
-        if (gap <= 0) {
+        if (actualExpenses <= 0) {
+            gapEl.textContent = '¥ 0.00';
+            gapEl.className = 'stat-value stat-gap';
+            suggestion.textContent = '请先添加实际开支和发票录入';
+            suggestion.className = 'invoice-suggestion';
+            progressFill.style.width = '0%';
+        } else if (gap <= 0) {
             gapEl.textContent = `¥ ${Math.abs(gap).toFixed(2)}`;
             gapEl.className = 'stat-value stat-gap over';
-            suggestion.textContent = '✅ 发票已齐，可以提交报销';
+            suggestion.textContent = '✅ 发票已覆盖所有实际开支，可以提交报销';
             suggestion.className = 'invoice-suggestion ready';
             progressFill.style.width = '100%';
         } else {
             gapEl.textContent = `¥ ${gap.toFixed(2)}`;
             gapEl.className = 'stat-value stat-gap short';
 
-            // 估算还需要多少张（按已有发票平均金额）
-            const avgInvoice = actual / state.invoices.length;
+            // 进度条：发票总额 / 实际开支
+            const pct = Math.min(100, (invoiceTotal / actualExpenses) * 100);
+            progressFill.style.width = pct + '%';
+
+            // 估算还需要多少张发票
+            const avgInvoice = invoiceTotal > 0 ? invoiceTotal / validItems.length : 0;
             if (avgInvoice > 0) {
                 const estimated = Math.ceil(gap / avgInvoice);
-                suggestion.textContent = `⚠️ 还差 ¥${gap.toFixed(2)}，按当前平均金额，建议再凑约 ${estimated} 张发票`;
+                suggestion.textContent = `⚠️ 还差 ¥${gap.toFixed(2)}，按当前发票均值，建议再凑约 ${estimated} 张发票`;
             } else {
-                suggestion.textContent = `⚠️ 还差 ¥${gap.toFixed(2)}`;
+                suggestion.textContent = `⚠️ 还差 ¥${gap.toFixed(2)}，请先在发票录入表添加发票`;
             }
             suggestion.className = 'invoice-suggestion needed';
-
-            // 进度条
-            const pct = target > 0 ? Math.min(100, (actual / target) * 100) : 0;
-            progressFill.style.width = pct + '%';
         }
     }
 
@@ -635,7 +641,7 @@ const App = (() => {
             });
         });
 
-        showToast(`识别到 ${entries.length} 条开支记录，确认类目后应用到表格`, 'success');
+        showToast(`识别到 ${entries.length} 条开支记录，确认后应用到实际开支`, 'success');
     }
 
     function onOcrCatChange(index, newCat) {
@@ -670,14 +676,8 @@ const App = (() => {
                 const index = parseInt(cb.closest('tr').querySelector('.ocr-index').value, 10);
                 const entry = state.ocrResults[index];
                 if (entry) {
-                    // 从 OCR 结果面板的 select 读取用户可能修改过的类目
-                    const catSelect = cb.closest('tr').querySelector('.ocr-cat-select');
-                    const finalCategory = catSelect ? catSelect.value : entry.category;
-
-                    state.items.push({
-                        id: state.nextId++,
-                        category: finalCategory,
-                        description: entry.description,
+                    state.expenses.push({
+                        id: state.nextExpenseId++,
                         amount: entry.amount,
                     });
                     addedCount++;
@@ -685,20 +685,12 @@ const App = (() => {
             }
         });
 
-        // 清除空行
-        state.items = state.items.filter(i => {
-            if (i.description === '' && !i.amount) {
-                state.nextId--; // 回退 ID（如果是我们刚加的空行）
-                return false;
-            }
-            return true;
-        });
-
-        renderTable();
+        renderExpenses();
+        updateExpenseProgress();
         document.getElementById('ocrResults').classList.remove('active');
         state.ocrResults = [];
 
-        showToast(`已应用 ${addedCount} 条记录到报销表格`, 'success');
+        showToast(`已应用 ${addedCount} 条记录到实际开支`, 'success');
     }
 
     function catIcon(cat) {
@@ -797,7 +789,7 @@ const App = (() => {
         toggleSelectAll,
         mergeSelectedRows,
         onOcrCatChange,
-        removeInvoice,
+        removeExpense,
     };
 })();
 
