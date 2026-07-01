@@ -11,7 +11,9 @@ const App = (() => {
         date: '',
         items: [], // [{id, category, description, amount}]
         ocrResults: [], // OCR 识别到的建议条目
+        invoices: [], // [{id, amount}] 已有发票
         nextId: 1,
+        nextInvoiceId: 1,
     };
 
     // 类目选项
@@ -52,12 +54,15 @@ const App = (() => {
 
         // 清空表格
         document.getElementById('btnClearAll').addEventListener('click', () => {
-            if (state.items.length === 0) return;
-            if (confirm('确认清空所有开支明细？')) {
+            if (state.items.length === 0 && state.invoices.length === 0) return;
+            if (confirm('确认清空所有开支明细和已有发票？')) {
                 state.items = [];
+                state.invoices = [];
                 state.nextId = 1;
+                state.nextInvoiceId = 1;
                 addNewRow();
                 renderTable();
+                renderInvoices();
                 updateSummary();
             }
         });
@@ -89,6 +94,9 @@ const App = (() => {
 
         // 截图上传
         bindUploadEvents();
+
+        // 已有发票
+        bindInvoiceEvents();
     }
 
     function bindUploadEvents() {
@@ -242,6 +250,132 @@ const App = (() => {
             summaryDiv.style.display = 'block';
         } else {
             summaryDiv.style.display = 'none';
+        }
+
+        // 同步更新凑单进度
+        updateInvoiceProgress();
+    }
+
+    // ---- 已有发票管理 ----
+    function bindInvoiceEvents() {
+        const input = document.getElementById('invoiceAmountInput');
+        const addBtn = document.getElementById('btnAddInvoice');
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addInvoice();
+            }
+        });
+
+        // 限制金额输入格式
+        input.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/[^\d.]/g, '');
+            const dotIndex = value.indexOf('.');
+            if (dotIndex !== -1) {
+                value = value.substring(0, dotIndex + 1) + value.substring(dotIndex + 1).replace(/\./g, '');
+                if (value.length - dotIndex > 3) value = value.substring(0, dotIndex + 3);
+            }
+            e.target.value = value;
+        });
+
+        addBtn.addEventListener('click', addInvoice);
+    }
+
+    function addInvoice() {
+        const input = document.getElementById('invoiceAmountInput');
+        const value = parseFloat(input.value.trim());
+        if (isNaN(value) || value <= 0) {
+            showToast('请输入有效的金额', 'error');
+            input.focus();
+            return;
+        }
+
+        state.invoices.push({
+            id: state.nextInvoiceId++,
+            amount: value,
+        });
+
+        input.value = '';
+        input.focus();
+        renderInvoices();
+    }
+
+    function removeInvoice(id) {
+        state.invoices = state.invoices.filter(i => i.id !== id);
+        renderInvoices();
+    }
+
+    function renderInvoices() {
+        const listDiv = document.getElementById('invoiceList');
+        const progressDiv = document.getElementById('invoiceProgress');
+
+        if (state.invoices.length === 0) {
+            listDiv.innerHTML = `
+                <div class="empty-state" style="padding:24px;">
+                    <div class="empty-icon">📭</div>
+                    <p>暂无已有发票，请在上方输入金额</p>
+                </div>
+            `;
+            progressDiv.style.display = 'none';
+            return;
+        }
+
+        // 渲染发票标签
+        listDiv.innerHTML = state.invoices.map(inv => `
+            <span class="invoice-tag">
+                ¥${inv.amount.toFixed(2)}
+                <button class="tag-del" onclick="App.removeInvoice(${inv.id})" title="删除">×</button>
+            </span>
+        `).join('');
+
+        updateInvoiceProgress();
+    }
+
+    function updateInvoiceProgress() {
+        const progressDiv = document.getElementById('invoiceProgress');
+        if (state.invoices.length === 0) {
+            progressDiv.style.display = 'none';
+            return;
+        }
+
+        const validItems = state.items.filter(i => i.description && i.amount > 0);
+        const target = validItems.reduce((sum, i) => sum + i.amount, 0);
+        const actual = state.invoices.reduce((sum, i) => sum + i.amount, 0);
+        const gap = target - actual;
+
+        progressDiv.style.display = 'block';
+
+        document.getElementById('invoiceTarget').textContent = `¥ ${target.toFixed(2)}`;
+        document.getElementById('invoiceActual').textContent = `¥ ${actual.toFixed(2)}`;
+
+        const gapEl = document.getElementById('invoiceGap');
+        const suggestion = document.getElementById('invoiceSuggestion');
+        const progressFill = document.getElementById('invoiceProgressFill');
+
+        if (gap <= 0) {
+            gapEl.textContent = `¥ ${Math.abs(gap).toFixed(2)}`;
+            gapEl.className = 'stat-value stat-gap over';
+            suggestion.textContent = '✅ 发票已齐，可以提交报销';
+            suggestion.className = 'invoice-suggestion ready';
+            progressFill.style.width = '100%';
+        } else {
+            gapEl.textContent = `¥ ${gap.toFixed(2)}`;
+            gapEl.className = 'stat-value stat-gap short';
+
+            // 估算还需要多少张（按已有发票平均金额）
+            const avgInvoice = actual / state.invoices.length;
+            if (avgInvoice > 0) {
+                const estimated = Math.ceil(gap / avgInvoice);
+                suggestion.textContent = `⚠️ 还差 ¥${gap.toFixed(2)}，按当前平均金额，建议再凑约 ${estimated} 张发票`;
+            } else {
+                suggestion.textContent = `⚠️ 还差 ¥${gap.toFixed(2)}`;
+            }
+            suggestion.className = 'invoice-suggestion needed';
+
+            // 进度条
+            const pct = target > 0 ? Math.min(100, (actual / target) * 100) : 0;
+            progressFill.style.width = pct + '%';
         }
     }
 
@@ -663,6 +797,7 @@ const App = (() => {
         toggleSelectAll,
         mergeSelectedRows,
         onOcrCatChange,
+        removeInvoice,
     };
 })();
 

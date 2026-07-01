@@ -958,6 +958,171 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
+/* ---- Invoice (已有发票) ---- */
+.invoice-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.invoice-currency {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+}
+
+.invoice-amount-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 1.1rem;
+    font-family: var(--font-mono);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.invoice-amount-input:focus {
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.invoice-amount-input::placeholder {
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+/* Invoice list */
+.invoice-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    min-height: 20px;
+}
+
+.invoice-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+}
+
+.invoice-tag .tag-del {
+    background: none;
+    border: none;
+    color: #93c5fd;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 2px;
+    transition: color 0.15s;
+}
+
+.invoice-tag .tag-del:hover {
+    color: var(--color-danger);
+}
+
+/* Invoice progress */
+.invoice-progress {
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+}
+
+.invoice-progress-header {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    margin-bottom: 12px;
+}
+
+.invoice-progress-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.invoice-stat {
+    text-align: center;
+    min-width: 80px;
+}
+
+.invoice-stat .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+}
+
+.invoice-stat .stat-value {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.invoice-stat .stat-gap {
+    font-size: 1.15rem;
+}
+
+.invoice-stat .stat-gap.over {
+    color: var(--color-success);
+}
+
+.invoice-stat .stat-gap.short {
+    color: var(--color-danger);
+}
+
+.invoice-stat-divider {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    font-weight: 300;
+}
+
+.invoice-progress-bar {
+    height: 8px;
+    background: var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.invoice-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+}
+
+.invoice-suggestion {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.invoice-suggestion.ready {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.invoice-suggestion.needed {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
 /* ---- OCR Result Row ---- */
 .ocr-result-row {
     cursor: pointer;

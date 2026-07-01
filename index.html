@@ -90,7 +90,57 @@
             </div>
         </div>
 
-        <!-- 3. 截图上传 & OCR 识别 -->
+        <!-- 3. 已有发票 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="icon">🧾</span>
+                <h2>已有发票</h2>
+                <span style="font-size:0.75rem;color:var(--color-text-muted);margin-left:auto;">输入已有发票金额，查看还差多少</span>
+            </div>
+            <div class="card-body">
+                <div class="invoice-input-row">
+                    <span class="invoice-currency">¥</span>
+                    <input type="text" id="invoiceAmountInput" class="invoice-amount-input" placeholder="输入金额，回车添加" autocomplete="off">
+                    <button class="btn btn-primary btn-sm" id="btnAddInvoice">添加</button>
+                </div>
+
+                <div class="invoice-list" id="invoiceList">
+                    <div class="empty-state" style="padding:24px;">
+                        <div class="empty-icon">📭</div>
+                        <p>暂无已有发票，请在下方输入金额</p>
+                    </div>
+                </div>
+
+                <!-- 凑单进度 -->
+                <div class="invoice-progress" id="invoiceProgress" style="display:none;">
+                    <div class="invoice-progress-header">
+                        <span>📊 凑单进度</span>
+                    </div>
+                    <div class="invoice-progress-stats">
+                        <div class="invoice-stat">
+                            <span class="stat-label">报销目标</span>
+                            <span class="stat-value" id="invoiceTarget">¥ 0.00</span>
+                        </div>
+                        <div class="invoice-stat-divider">→</div>
+                        <div class="invoice-stat">
+                            <span class="stat-label">已有发票</span>
+                            <span class="stat-value" id="invoiceActual">¥ 0.00</span>
+                        </div>
+                        <div class="invoice-stat-divider">=</div>
+                        <div class="invoice-stat">
+                            <span class="stat-label">差额</span>
+                            <span class="stat-value stat-gap" id="invoiceGap">¥ 0.00</span>
+                        </div>
+                    </div>
+                    <div class="invoice-progress-bar">
+                        <div class="invoice-progress-fill" id="invoiceProgressFill"></div>
+                    </div>
+                    <div class="invoice-suggestion" id="invoiceSuggestion"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 截图上传 & OCR 识别 -->
         <div class="card">
             <div class="card-header">
                 <span class="icon">📸</span>
@@ -148,7 +198,7 @@
             </div>
         </div>
 
-        <!-- 4. 操作按钮 -->
+        <!-- 5. 操作按钮 -->
         <div style="display:flex; gap:12px; justify-content:center; padding:8px 0 16px;">
             <button class="btn btn-primary" id="btnPreview" style="padding:12px 32px; font-size:1rem;">
                 👁️ 生成预览
