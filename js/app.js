@@ -232,7 +232,7 @@ const App = (() => {
     }
 
     function updateSummary() {
-        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const validItems = state.items.filter(i => parseFloat(i.amount) > 0);
         const total = validItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
         const summaryDiv = document.getElementById('summarySection');
@@ -338,7 +338,7 @@ const App = (() => {
             return;
         }
 
-        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const validItems = state.items.filter(i => parseFloat(i.amount) > 0);
         const invoiceTotal = validItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0); // 发票总额
         const actualExpenses = state.expenses.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0); // 实际开支
         const gap = actualExpenses - invoiceTotal; // 差额：正数表示还需凑发票
@@ -736,18 +736,16 @@ const App = (() => {
             return false;
         }
 
-        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const validItems = state.items.filter(i => parseFloat(i.amount) > 0);
         if (validItems.length === 0) {
             showToast('请至少添加一条有效的发票', 'error');
             return false;
         }
 
-        // 检查是否有未填全的行
+        // 检查是否有金额未填的行（描述可为空）
         for (const item of state.items) {
-            const hasDesc = !!item.description;
-            const hasAmount = parseFloat(item.amount) > 0;
-            if ((hasDesc && !hasAmount) || (!hasDesc && hasAmount)) {
-                showToast('请注意：部分行描述或金额未填写完整', 'error');
+            if (item.description && parseFloat(item.amount) <= 0) {
+                showToast('请注意：部分行金额未填写完整', 'error');
                 return false;
             }
         }
@@ -757,7 +755,7 @@ const App = (() => {
 
     // ---- 预览 ----
     function showPreview() {
-        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const validItems = state.items.filter(i => parseFloat(i.amount) > 0);
         const total = validItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
         const totalCN = CurrencyCN.toChinese(total);
 
