@@ -232,9 +232,8 @@ const App = (() => {
     }
 
     function updateSummary() {
-        syncTableData();
-        const validItems = state.items.filter(i => i.description && i.amount > 0);
-        const total = validItems.reduce((sum, i) => sum + i.amount, 0);
+        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const total = validItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
         const summaryDiv = document.getElementById('summarySection');
         if (validItems.length > 0) {
@@ -339,9 +338,9 @@ const App = (() => {
             return;
         }
 
-        const validItems = state.items.filter(i => i.description && i.amount > 0);
-        const invoiceTotal = validItems.reduce((sum, i) => sum + i.amount, 0); // 发票总额
-        const actualExpenses = state.expenses.reduce((sum, i) => sum + i.amount, 0); // 实际开支
+        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const invoiceTotal = validItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0); // 发票总额
+        const actualExpenses = state.expenses.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0); // 实际开支
         const gap = actualExpenses - invoiceTotal; // 差额：正数表示还需凑发票
 
         progressDiv.style.display = 'block';
@@ -443,7 +442,7 @@ const App = (() => {
         const item = state.items.find(i => i.id === id);
         if (item) {
             if (field === 'amount') {
-                item[field] = value;
+                item[field] = value === '' || value === undefined ? '' : parseFloat(value) || 0;
             } else {
                 item[field] = value;
             }
@@ -729,21 +728,25 @@ const App = (() => {
 
     // ---- 验证 ----
     function validateBeforePreview() {
+        syncTableData(); // 预览前先从 DOM 同步最新数据
+
         if (!state.reimburser) {
             showToast('请填写报销人姓名', 'error');
             document.getElementById('reimburseName').focus();
             return false;
         }
 
-        const validItems = state.items.filter(i => i.description && i.amount > 0);
+        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
         if (validItems.length === 0) {
-            showToast('请至少添加一条有效的开支明细', 'error');
+            showToast('请至少添加一条有效的发票', 'error');
             return false;
         }
 
         // 检查是否有未填全的行
         for (const item of state.items) {
-            if ((item.description && !item.amount) || (!item.description && item.amount)) {
+            const hasDesc = !!item.description;
+            const hasAmount = parseFloat(item.amount) > 0;
+            if ((hasDesc && !hasAmount) || (!hasDesc && hasAmount)) {
                 showToast('请注意：部分行描述或金额未填写完整', 'error');
                 return false;
             }
@@ -754,8 +757,8 @@ const App = (() => {
 
     // ---- 预览 ----
     function showPreview() {
-        const validItems = state.items.filter(i => i.description && i.amount > 0);
-        const total = validItems.reduce((sum, i) => sum + i.amount, 0);
+        const validItems = state.items.filter(i => i.description && parseFloat(i.amount) > 0);
+        const total = validItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
         const totalCN = CurrencyCN.toChinese(total);
 
         const previewItems = document.getElementById('previewItems');
@@ -764,7 +767,7 @@ const App = (() => {
                 <td>${index + 1}</td>
                 <td>${escapeHtml(item.category)}</td>
                 <td class="col-desc">${escapeHtml(item.description)}</td>
-                <td class="col-amount">${item.amount.toFixed(2)}</td>
+                <td class="col-amount">${(parseFloat(item.amount) || 0).toFixed(2)}</td>
             </tr>
         `).join('');
 
